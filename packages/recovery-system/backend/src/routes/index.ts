@@ -1,26 +1,16 @@
 import express from 'express';
 import * as progressController from '../controllers/progress.controller';
+import { isAuth } from '../middleware/isAuth';
 
 const router = express.Router();
 
-// ============================================
-// Step 4: Progress Routes
-// ============================================
+// IMPORTANT: Auth routes are handled by the catch-all in app.ts
+// app.all("/api/auth/*", toNodeHandler(auth)) in app.ts
+// No need to add auth routes here to avoid conflicts
 
-// Daily Check-in Route
-// POST /api/progress/checkin
-// Body: { userId?: string, mood: string, notes?: string, energy?: number }
-router.post('/progress/checkin', progressController.dailyCheckIn);
-
-// Get Current Streak
-// GET /api/progress/streak?userId=user_123
-router.get('/progress/streak', progressController.getStreak);
-
-// Get Mood History
-// GET /api/progress/mood-history?userId=user_123&days=7
-router.get('/progress/mood-history', progressController.getMoodHistory);
-
-// TODO: Add authentication middleware when Person A completes Auth
-// Example: router.post('/progress/checkin', authenticateUser, progressController.dailyCheckIn);
+// Progress Routes (Protected)
+router.post('/progress/checkin', isAuth, progressController.dailyCheckIn);
+router.get('/progress/streak', isAuth, progressController.getStreak);
+router.get('/progress/mood-history', isAuth, progressController.getMoodHistory);
 
 export default router;

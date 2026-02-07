@@ -2,16 +2,14 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Progress from '../models/Progress';
 import User from '../models/User';
-
-// Test user ID (valid MongoDB ObjectId format)
-const TEST_USER_ID = '507f1f77bcf86cd799439011';
+import { calculateStreak, getSafeTimezone } from '../utils/streakCalculator';
 
 // Step 3: Daily Check-in Logic
 // POST /api/progress/checkin
 export const dailyCheckIn = async (req: Request, res: Response): Promise<Response | void> => {
   try {
-    // Using test ObjectId for testing until Auth is ready
-    const userId = req.body.userId || TEST_USER_ID; // TODO: Replace with req.user.id after auth
+    // 1. GET USER ID FROM AUTHENTICATION (Fixed)
+    const userId = (req as any).user.id;
     const { mood, notes, energy } = req.body;
 
     // Validate required fields
@@ -24,14 +22,7 @@ export const dailyCheckIn = async (req: Request, res: Response): Promise<Respons
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ 
-        message: 'Invalid user ID format. Please use a valid ObjectId or omit for testing.' 
-      });
-    }
-
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ 
-        message: 'Invalid user ID format. Please use a valid ObjectId or omit for testing.' 
+        message: 'Invalid user ID format.' 
       });
     }
 
@@ -43,6 +34,7 @@ export const dailyCheckIn = async (req: Request, res: Response): Promise<Respons
       progress = new Progress({
         userId,
         streak: 1,
+        longestStreak: 1,
         lastCheckIn: new Date(),
         checkedInToday: true,
         moodLog: [{
@@ -71,35 +63,33 @@ export const dailyCheckIn = async (req: Request, res: Response): Promise<Respons
       });
     }
 
-    // CRUCIAL LOGIC: Compare today's date with lastCheckIn
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset to midnight for date comparison
+    // Get user's timezone (fetch from User model or default to UTC)
+    const user = await User.findById(userId).select('timezone');
+    const userTimezone = getSafeTimezone(user?.timezone);
 
-    const lastCheckIn = progress.lastCheckIn ? new Date(progress.lastCheckIn) : null;
-    
-    if (lastCheckIn) {
-      lastCheckIn.setHours(0, 0, 0, 0); // Reset to midnight
-      
-      // Check if already checked in today
-      if (lastCheckIn.getTime() === today.getTime()) {
-        return res.status(400).json({
-          message: 'You have already checked in today! Come back tomorrow 🌟',
-          progress
-        });
-      }
+    // Calculate streak using utility function with timezone support
+    // (Ensure lastCheckIn is a Date object)
+    const lastCheckInDate = progress.lastCheckIn ? new Date(progress.lastCheckIn) : new Date();
+    const streakResult = calculateStreak(lastCheckInDate, userTimezone);
+
+    // Check if already checked in today
+    if (streakResult.alreadyCheckedInToday) {
+      return res.status(400).json({
+        message: 'You have already checked in today! Come back tomorrow 🌟',
+        progress
+      });
     }
 
-    // Calculate if consecutive or missed days
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const isConsecutive = lastCheckIn && lastCheckIn.getTime() === yesterday.getTime();
-
-    // STREAK LOGIC:
-    if (isConsecutive) {
+    // Update streak based on calculation
+    if (streakResult.isConsecutive) {
       // Consecutive day - increment streak
       progress.streak += 1;
-    } else {
+      
+      // Update longest streak if current streak is higher
+      if (progress.streak > progress.longestStreak) {
+        progress.longestStreak = progress.streak;
+      }
+    } else if (streakResult.shouldResetStreak) {
       // Missed a day - reset streak to 1
       progress.streak = 1;
     }
@@ -138,7 +128,7 @@ export const dailyCheckIn = async (req: Request, res: Response): Promise<Respons
       message,
       progress,
       newMilestones: newlyAchieved,
-      streakContinued: isConsecutive
+      streakContinued: streakResult.isConsecutive
     });
 
   } catch (error: any) {
@@ -153,8 +143,8 @@ export const dailyCheckIn = async (req: Request, res: Response): Promise<Respons
 // GET /api/progress/streak
 export const getStreak = async (req: Request, res: Response): Promise<Response | void> => {
   try {
-    // Get userId from query params for GET request
-    const userId = req.query.userId as string || TEST_USER_ID; // TODO: Replace with req.user.id
+    // 2. GET USER ID FROM AUTHENTICATION (Fixed)
+    const userId = (req as any).user.id;
 
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -168,12 +158,14 @@ export const getStreak = async (req: Request, res: Response): Promise<Response |
     if (!progress) {
       return res.status(404).json({
         message: 'No progress found. Start your journey with a check-in!',
-        streak: 0
+        currentStreak: 0,
+        longestStreak: 0
       });
     }
 
     res.status(200).json({
-      streak: progress.streak,
+      currentStreak: progress.streak,
+      longestStreak: progress.longestStreak,
       lastCheckIn: progress.lastCheckIn,
       checkedInToday: progress.checkedInToday,
       milestones: progress.milestones.filter(m => m.achieved)
@@ -191,8 +183,8 @@ export const getStreak = async (req: Request, res: Response): Promise<Response |
 // GET /api/progress/mood-history
 export const getMoodHistory = async (req: Request, res: Response): Promise<Response | void> => {
   try {
-    // Get userId from query params for GET request
-    const userId = req.query.userId as string || TEST_USER_ID; // TODO: Replace with req.user.id
+    // 3. GET USER ID FROM AUTHENTICATION (Fixed)
+    const userId = (req as any).user.id;
     const { days } = req.query; // Optional: filter last N days
 
     // Validate ObjectId format

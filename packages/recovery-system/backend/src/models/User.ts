@@ -1,49 +1,64 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-
+// BetterAuth-compatible User Interface
+// Combines betterAuth standard fields with custom recovery app fields
 export interface IUser extends Document {
+  // BetterAuth standard fields
   email: string;
-  password: string; 
+  emailVerified: boolean; // Changed from isVerified to match betterAuth
   name: string;
-  addictionTypes: string[];
+  image?: string; // Added for betterAuth compatibility
   role: 'user' | 'counselor' | 'admin';
-  profile: {
+  
+  // Custom recovery app fields
+  addictionTypes: string[];
+  recoveryStart?: Date;
+  accountStatus: 'active' | 'suspended' | 'pending';
+  phone?: string;
+  emergencyContact?: string;
+  profile?: {
     age?: number;
     bio?: string;
   };
-  recoveryStart?: Date;
-  accountStatus: 'active' | 'suspended' | 'pending';
-  isVerified: boolean;
+  timezone?: string; // User's timezone for streak calculations (e.g., 'UTC', 'America/New_York')
+  
+  // Timestamps (auto-generated)
   createdAt: Date;
   updatedAt: Date;
-
 }
 
-
 const UserSchema: Schema = new Schema({
+  // BetterAuth standard fields (MUST match betterAuth schema)
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  emailVerified: { type: Boolean, default: false }, // Changed from isVerified
   name: { type: String, required: true },
-  addictionTypes: [{ type: String }],
+  image: { type: String }, // Added for profile pictures
   role: { 
     type: String, 
     enum: ['user', 'counselor', 'admin'], 
     default: 'user' 
   },
-  profile: {
-    age: { type: Number },
-    bio: { type: String }
-  },
+  
+  // Custom recovery app fields
+  addictionTypes: [{ type: String }],
   recoveryStart: { type: Date },
   accountStatus: { 
     type: String, 
     enum: ['active', 'suspended', 'pending'], 
     default: 'active' 
   },
-  isVerified: { type: Boolean, default: false }
+  phone: { type: String },
+  emergencyContact: { type: String },
+  profile: {
+    age: { type: Number },
+    bio: { type: String }
+  },
+  timezone: { type: String, default: 'UTC' } // Default to UTC if not provided
 }, {
   timestamps: true 
 });
 
+// NOTE: Password field is NOT included here
+// BetterAuth manages password hashing automatically
 
-export default mongoose.model<IUser>('User', UserSchema);
+export default mongoose.model<IUser>('users', UserSchema);
