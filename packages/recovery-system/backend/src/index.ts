@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import connectDB from "./config/db";
+import {connectDB} from "./config/db";
 
 dotenv.config();
 
