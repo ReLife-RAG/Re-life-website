@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { toNodeHandler } from "better-auth/node"; // Import the handler
 import { auth } from "./lib/auth"; // Import your auth engine
+import journalRoutes from "./routes/journal.routes";
 
 const app: Application = express();
 
@@ -15,6 +16,8 @@ app.use(helmet());
 // This guarantees that http://localhost:5000/api/auth/... works
 // ----------------------------------------------------
 app.all("/api/auth/*", toNodeHandler(auth));
+
+app.use("/api/journal", journalRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200).send("Re-Life API is running...");
