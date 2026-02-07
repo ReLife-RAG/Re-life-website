@@ -2,7 +2,7 @@ import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { toNodeHandler } from "better-auth/node";
-import { getAuth } from "./lib/auth";
+import { auth } from "./lib/auth";
 import progressRoutes from "./routes/index";
 import journalRoutes from "./routes/journal.routes";
 
@@ -10,11 +10,23 @@ import journalRoutes from "./routes/journal.routes";
 const app: Application = express();
 
 app.use(express.json()); 
-app.use(cors());         
+
+// CORS Configuration
+// TODO: In production, change 'origin' to specific domain (e.g., 'https://relife.com') 
+// and use process.env.FRONTEND_URL instead of hardcoded localhost
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : true, // Development - allow all (for Postman testing), restricted in production
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(helmet());     
 
 // Auth routes
-app.all("/api/auth/*", (req, res) => toNodeHandler(getAuth())(req, res));
+app.all("/api/auth/*", (req, res) => toNodeHandler(auth)(req, res));
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200).send("Re-Life API is running...");
