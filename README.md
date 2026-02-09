@@ -166,6 +166,19 @@ npm install <package> --workspace=packages/recovery-system/frontend
 - **Reminder** - User reminders with frequency and addiction type
 - **Session** - Better-Auth session management
 
+## 🤖 Automation
+
+### Automatic README Updates
+This repository includes an automated workflow that updates the README file when pull requests are merged:
+
+- **Trigger:** Runs automatically when a PR is approved and merged
+- **Action:** Adds merged PR information to a "Recent Changes" section in the README
+- **Information Tracked:** PR number, title, author, date, and link
+- **Limit:** Keeps the last 10 merged PRs for reference
+- **Location:** See `.github/workflows/update-readme-on-pr.yml` and `.github/scripts/update-readme.js`
+
+This automation ensures that the README always reflects recent development activity and makes it easy for contributors and users to see what has changed in the project.
+
 ---
 
 ## Original Landing Page Features
