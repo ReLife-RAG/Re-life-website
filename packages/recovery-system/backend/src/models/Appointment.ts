@@ -20,6 +20,8 @@ export interface IAppointment extends Document{
     meetingLink?: String;
     paymentAmount: number;
     paymentStatus: 'Pending' | 'Completed' | 'Failed';
+    CancelledByUser?: boolean;
+    CancelledBy?: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
