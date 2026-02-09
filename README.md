@@ -82,16 +82,42 @@ npm run build --workspace=packages/recovery-system/frontend
 - **Features:** Video backgrounds, animations, glassmorphism design
 
 ### 2. Recovery System Backend
-- **Tech Stack:** Node.js, Express, MongoDB
+- **Tech Stack:** Node.js, Express, MongoDB, TypeScript, Better-Auth
 - **Port:** 5000
-- **Features:** RAG-based AI, User management, Chat API
+- **Features:** 
+  - 🔐 Authentication with Better-Auth (email/password, sessions)
+  - 📊 Progress Tracking with timezone-aware streak calculation
+  - 📝 Journal System with image uploads (Cloudinary)
+  - ⏰ Smart Reminder System
+  - 🌍 Timezone support for global users
+  - 📈 Mood logging and analytics
 
 ### 3. Recovery System Frontend
 - **Tech Stack:** React, Vite, TailwindCSS
 - **Port:** 3001
-- **Features:** AI chat interface, Progress tracking
+- **Features:** AI chat interface, Progress tracking, User dashboard
 
-## 🛠️ Development
+## � Backend API Endpoints
+
+### Authentication (Better-Auth)
+- `POST /api/auth/sign-up` - Create new account
+- `POST /api/auth/sign-in` - Login
+- `POST /api/auth/sign-out` - Logout
+- `GET /api/auth/session` - Get current session
+
+### Progress Tracking (Protected)
+- `POST /api/progress/checkin` - Daily check-in with mood logging
+- `GET /api/progress/streak` - Get current and longest streak
+- `GET /api/progress/mood-history` - Retrieve mood history
+
+### Journal (Protected)
+- `POST /api/journals` - Create journal entry (with optional image)
+- `GET /api/journals` - Get all user journal entries
+- `GET /api/journals/:id` - Get specific entry
+- `PATCH /api/journals/:id` - Update entry
+- `DELETE /api/journals/:id` - Delete entry
+
+## �🛠️ Development
 
 ### Adding Dependencies
 
@@ -114,11 +140,31 @@ npm install <package> --workspace=packages/recovery-system/frontend
 
 ## 🔧 Next Steps
 
-1. Configure MongoDB connection in backend
-2. Add your AI API keys (OpenAI, Anthropic, etc.)
-3. Implement RAG logic in backend
-4. Build out the recovery system UI
-5. Link landing page to recovery system
+1. ✅ ~~Configure MongoDB connection in backend~~ (Complete)
+2. ✅ ~~Implement authentication with Better-Auth~~ (Complete)
+3. ✅ ~~Build progress tracking system~~ (Complete)
+4. ✅ ~~Implement journal system with image uploads~~ (Complete)
+5. 🚧 Integrate RAG-based AI chat system
+6. 🚧 Build recovery system frontend UI
+7. 🚧 Connect landing page to recovery system
+
+## 📊 Implemented Features
+
+### Backend (Completed)
+- ✅ Better-Auth authentication (sessions, email/password)
+- ✅ User management with custom recovery fields
+- ✅ Progress tracking with timezone-aware streaks
+- ✅ Mood logging and history
+- ✅ Journal system with Cloudinary image uploads
+- ✅ Reminder system for addiction types (drugs, social_media, pornography)
+- ✅ Protected API routes with authentication middleware
+
+### Database Models
+- **User** - Authentication + recovery profile (addiction types, recovery start date, timezone)
+- **Progress** - Streak tracking, mood logs, milestones, relapse incidents
+- **Journal** - Entries with mood, triggers, coping strategies, images
+- **Reminder** - User reminders with frequency and addiction type
+- **Session** - Better-Auth session management
 
 ---
 
