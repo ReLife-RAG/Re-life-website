@@ -5,6 +5,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth";
 import progressRoutes from "./routes/index";
 import journalRoutes from "./routes/journal.routes";
+import communityRoutes from "./routes/community.routes";
 
 
 const app: Application = express();
@@ -38,7 +39,8 @@ app.use('/api', progressRoutes);
 // Journal Routes
 app.use('/api', journalRoutes);
 
-// 404 Handler
+// Community Routes
+app.use('/api/community', communityRoutes);
 app.use((req: Request, res: Response) => {
   res.status(404).json({ 
     message: 'Route not found',
