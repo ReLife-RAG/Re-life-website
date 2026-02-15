@@ -47,9 +47,9 @@ const SplashScreen = () => {
           24/7 personalized support using advanced RAG technology and evidence-based therapy
         </p>
 
-        {/* PRIMARY ACTION BUTTON -> Goes to Questionnaire */}
-        <Link href="/Questionnaire"> 
-          <button className="bg-[#E5E5E5] hover:bg-white text-black font-medium py-3 px-10 rounded-full transition-all duration-300 text-lg shadow-lg mb-4">
+        {/* PRIMARY ACTION BUTTON -> Goes to Signup */}
+        <Link href="/signup"> 
+          <button className="bg-[#8CD092] hover:bg-[#7ac085] text-black font-medium py-3 px-10 rounded-full transition-all duration-300 text-lg shadow-lg mb-4">
             Start Recovery Journey
           </button>
         </Link>
