@@ -5,12 +5,9 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth";
 import progressRoutes from "./routes/index";
 import journalRoutes from "./routes/journal.routes";
-<<<<<<< HEAD
 import communityRoutes from "./routes/community.routes";
-=======
 import { isAuth } from "./middleware/isAuth";
 import { getProfile, updateProfile, getProfileDetails } from "./controllers/auth.controller";
->>>>>>> 23cf0e749f8a22bf9d892b3c090d72c5f21895a9
 
 
 const app: Application = express();
