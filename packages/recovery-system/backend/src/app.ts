@@ -5,6 +5,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth";
 import progressRoutes from "./routes/index";
 import journalRoutes from "./routes/journal.routes";
+import communityRoutes from "./routes/community.routes";
 import counselorRoutes from "./routes/counselor.routes";
 import { isAuth } from "./middleware/isAuth";
 import { getProfile, updateProfile, getProfileDetails } from "./controllers/auth.controller";
@@ -46,6 +47,8 @@ app.use('/api', progressRoutes);
 // Journal Routes
 app.use('/api', journalRoutes);
 
+// Community Routes
+app.use('/api/community', communityRoutes);
 
 // Counselor Routes
 app.use('/api', counselorRoutes);
