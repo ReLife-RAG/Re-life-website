@@ -1,5 +1,11 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+/**
+ * Allowed counselor specialization values.
+ * Using "as const" makes it a readonly tuple type.
+ */
+
+
 export const ALLOWED_SPECIALIZATIONS = [
     'addiction',
     'substance_abuse',
@@ -23,13 +29,19 @@ export const ALLOWED_SPECIALIZATIONS = [
     'other',
 ] as const;
 
+
+// Type for specialization (only values from above array allowed)
 export type Specialization = (typeof ALLOWED_SPECIALIZATIONS)[number];
 
+
+// Time slot interface
 export interface ITimeSlot {
     start: string;
     end: string;
 }
 
+
+// Credentials interface
 export interface ICredentials {
     degree: string;
     license: string;
@@ -38,11 +50,15 @@ export interface ICredentials {
     certifications?: string[];
 }
 
+
+// Availability interface
 export interface IAvailability {
     daysAvailable: number[];
     timeSlots: ITimeSlot[];
 }
 
+
+// Main Counselor interface
 export interface ICounselor extends Document {
     userId: mongoose.Types.ObjectId;
     credentials: ICredentials;
@@ -58,6 +74,8 @@ export interface ICounselor extends Document {
     updatedAt: Date;
 }
 
+
+// TimeSlot schema (no separate _id)
 const TimeSlotSchema = new Schema<ITimeSlot>(
     {
         start: { type: String, required: true },
@@ -66,6 +84,8 @@ const TimeSlotSchema = new Schema<ITimeSlot>(
     { _id: false }
 );
 
+
+// Credentials schema
 const CredentialsSchema = new Schema<ICredentials>(
     {
         degree: {
@@ -96,6 +116,8 @@ const CredentialsSchema = new Schema<ICredentials>(
     { _id: false }
 );
 
+
+// Main Counselor schema
 const CounselorSchema = new Schema<ICounselor>(
     {
         userId: {
@@ -157,4 +179,6 @@ const CounselorSchema = new Schema<ICounselor>(
     { timestamps: true }
 );
 
+
+// Export model
 export default mongoose.model<ICounselor>('Counselor', CounselorSchema);
