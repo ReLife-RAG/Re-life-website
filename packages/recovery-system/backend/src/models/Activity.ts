@@ -6,6 +6,8 @@ export interface IActivity extends Document {
   date: string;     // YYYY-MM-DD
   sessions: number;
   pointsEarned: number;
+  duration: number;               // <-- added
+  details: Record<string, any>;   // <-- added
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +19,8 @@ const ActivitySchema: Schema = new Schema(
     date:         { type: String, required: true },
     sessions:     { type: Number, default: 1 },
     pointsEarned: { type: Number, default: 0 },
+    duration:     { type: Number, default: 0 },     // <-- added
+    details:      { type: Object, default: {} },    // <-- added
   },
   { timestamps: true }
 );
