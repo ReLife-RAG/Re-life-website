@@ -1,11 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IGameState extends Document {
-  userId: string; // betterAuth user id (string, not ObjectId)
+  userId: string;
 
   // ── Sober 
   soberDays: number;
-  lastPledgeDate: string | null; // YYYY-MM-DD
+  lastPledgeDate: string | null;
 
   // ── Forest 
   forestCoins: number;
@@ -15,16 +15,26 @@ export interface IGameState extends Document {
   rpgHP: number;
   rpgLevel: number;
   tasksDoneToday: string[];
-  tasksResetDate: string | null; // YYYY-MM-DD
+  tasksResetDate: string | null;
 
-  //  Braver 
+  // ── Braver 
   braverDays: number;
-  braverLastCheckin: string | null;    // YYYY-MM-DD
+  braverLastCheckin: string | null;
   challengesDoneToday: string[];
-  challengesResetDate: string | null;  // YYYY-MM-DD
+  challengesResetDate: string | null;
 
-  //    Points 
+  // ── Points & RPG System
   totalPoints: number;
+  weeklyPoints: number;
+  monthlyPoints: number;
+  weeklyResetDate: string | null;
+  monthlyResetDate: string | null;
+  xp: number;      // for leveling
+  level: number;   // for leveling
+
+  // Optional fields used in Health Score
+  totalFocusMinutes?: number;
+  totalTasksCompleted?: number;
 
   createdAt: Date;
   updatedAt: Date;
@@ -42,11 +52,11 @@ const GameStateSchema: Schema = new Schema(
     forestCoins: { type: Number, default: 0 },
 
     // Habitica
-    rpgXP:           { type: Number, default: 0 },
-    rpgHP:           { type: Number, default: 100 },
-    rpgLevel:        { type: Number, default: 1 },
-    tasksDoneToday:  { type: [String], default: [] },
-    tasksResetDate:  { type: String, default: null },
+    rpgXP:          { type: Number, default: 0 },
+    rpgHP:          { type: Number, default: 100 },
+    rpgLevel:       { type: Number, default: 1 },
+    tasksDoneToday: { type: [String], default: [] },
+    tasksResetDate: { type: String, default: null },
 
     // Braver
     braverDays:          { type: Number, default: 0 },
@@ -55,7 +65,17 @@ const GameStateSchema: Schema = new Schema(
     challengesResetDate: { type: String, default: null },
 
     // Points
-    totalPoints: { type: Number, default: 0 },
+    totalPoints:      { type: Number, default: 0 },
+    weeklyPoints:     { type: Number, default: 0 },   // added
+    monthlyPoints:    { type: Number, default: 0 },   // added
+    weeklyResetDate:  { type: String, default: null },// added
+    monthlyResetDate: { type: String, default: null },// added
+    xp:               { type: Number, default: 0 },   // added
+    level:            { type: Number, default: 1 },   // added
+
+    // Optional for Health Score
+    totalFocusMinutes:   { type: Number, default: 0 },
+    totalTasksCompleted: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
