@@ -12,6 +12,7 @@ import { getProfile, updateProfile, getProfileDetails } from "./controllers/auth
 import chatRoutes from "./routes/chat.routes";
 import gameRoutes from "./routes/game.routes";
 
+
 //import analyzer from 'express-api-timer';
 // import apisnap from '@umeshindu222/apisnap';
 
