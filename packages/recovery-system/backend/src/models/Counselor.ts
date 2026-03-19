@@ -118,7 +118,7 @@ const CounselorSchema = new Schema<ICounselor>(
     {
         userId: {
             type: Schema.Types.ObjectId,
-            ref: 'User',
+            ref: 'users',
             required: true,
             unique: true,
         },
