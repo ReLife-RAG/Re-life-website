@@ -24,7 +24,7 @@ export interface IGame extends Document {
 export interface IGameProgress extends Document {
   userId: mongoose.Types.ObjectId;
   gameId: mongoose.Types.ObjectId;
-  gameType: 'sober' | 'forest' | 'habitica' | 'braver';
+  gameType: 'sober' | 'forest' | 'habitica' | 'braver' | 'mindful' | 'journal';
   totalPoints: number;
   currentStreak: number;
   longestStreak: number;
@@ -69,6 +69,19 @@ export interface IGameProgress extends Document {
     badges: string[];
     currentMood?: string;
   };
+  mindfulData?: {
+    roundsCompleted: number;
+    totalSessions: number;
+    lastSessionDate?: string;
+    exercisesDoneToday: string[];
+    lastExerciseReset?: string;
+  };
+  journalData?: {
+    journalStreak: number;
+    totalEntries: number;
+    lastEntryDate?: string;
+    totalWordsWritten: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -112,7 +125,7 @@ const GameSchema = new Schema<IGame>({
 const GameProgressSchema = new Schema<IGameProgress>({
   userId:        { type: Schema.Types.ObjectId, ref: 'users', required: true },
   gameId:        { type: Schema.Types.ObjectId, ref: 'games', required: true },
-  gameType:      { type: String, enum: ['sober','forest','habitica','braver'], required: true },
+  gameType:      { type: String, enum: ['sober','forest','habitica','braver','mindful','journal'], required: true },
   totalPoints:   { type: Number, default: 0 },
   currentStreak: { type: Number, default: 0 },
   longestStreak: { type: Number, default: 0 },
@@ -156,6 +169,19 @@ const GameProgressSchema = new Schema<IGameProgress>({
     lastChallengeReset:  { type: String, default: null },
     badges:              [{ type: String }],
     currentMood:         { type: String },
+  },
+  mindfulData: {
+    roundsCompleted:    { type: Number, default: 0 },
+    totalSessions:      { type: Number, default: 0 },
+    lastSessionDate:    { type: String, default: null },
+    exercisesDoneToday: [{ type: String }],
+    lastExerciseReset:  { type: String, default: null },
+  },
+  journalData: {
+    journalStreak:     { type: Number, default: 0 },
+    totalEntries:      { type: Number, default: 0 },
+    lastEntryDate:     { type: String, default: null },
+    totalWordsWritten: { type: Number, default: 0 },
   },
 }, { timestamps: true });
 

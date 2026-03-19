@@ -41,10 +41,10 @@ const getToday = () => new Date().toISOString().slice(0, 10);
 const MIN_WORDS = 5;
 
 export default function JournalGame({ progress, onUpdateProgress, showToast }: Props) {
-  const saved      = (progress as any).journalData ?? {};
-  const journalStreak = saved.journalStreak   ?? 0;
-  const totalEntries  = saved.totalEntries    ?? 0;
-  const lastEntry     = saved.lastEntryDate;
+  const saved         = progress.journalData ?? ({} as any);
+  const journalStreak = (saved as any).journalStreak ?? 0;
+  const totalEntries  = (saved as any).totalEntries  ?? 0;
+  const lastEntry     = (saved as any).lastEntryDate as string | undefined;
   const alreadyWrote  = lastEntry === getToday();
 
   const [mood,      setMood]      = useState<number | null>(null);
@@ -64,24 +64,27 @@ export default function JournalGame({ progress, onUpdateProgress, showToast }: P
     if (!allDone) { showToast('Please answer all prompts (5+ words each)', 'error'); return; }
     setSaving(true);
     try {
-      const pts = PROMPTS.reduce((sum, p) => {
+      const pts       = PROMPTS.reduce((sum, p) => {
         const wc = (answers[p.id] ?? '').trim().split(/\s+/).filter(Boolean).length;
         return sum + (wc >= MIN_WORDS ? p.pts : 0);
-      }, 0);
-      const bonusPts  = mood >= 4 ? 10 : 0;
-      const total     = pts + bonusPts;
-      const newStreak = journalStreak + 1;
-      const newTotal  = totalEntries  + 1;
+      }, 0) + (mood >= 4 ? 10 : 0);
+      const totalWords = Object.values(answers).join(' ').trim().split(/\s+/).filter(Boolean).length;
 
       await onUpdateProgress({
-        totalPoints:   (progress.totalPoints   ?? 0) + total,
+        journalData: {
+          journalStreak:     journalStreak + 1,
+          totalEntries:      totalEntries + 1,
+          lastEntryDate:     getToday(),
+          totalWordsWritten: totalWords,
+        },
+        totalPoints:   (progress.totalPoints   ?? 0) + pts,
         currentStreak: (progress.currentStreak ?? 0) + 1,
         lastPlayed:    new Date().toISOString(),
       } as any);
 
-      setEarnedPts(total);
+      setEarnedPts(pts);
       setSubmitted(true);
-      showToast(`Journal saved! +${total} pts 📓`, 'success');
+      showToast(`Journal saved! +${pts} pts 📓`, 'success');
     } catch { showToast('Save failed', 'error'); }
     finally { setSaving(false); }
   }

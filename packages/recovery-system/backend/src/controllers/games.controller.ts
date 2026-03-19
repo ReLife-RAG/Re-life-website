@@ -159,7 +159,7 @@ export const updateGameProgress = async (req: Request, res: Response): Promise<v
     }
 
     // Nested fields → dot notation so MongoDB merges instead of replacing
-    const nested = ['soberData', 'forestData', 'habiticaData', 'braverData'] as const;
+    const nested = ['soberData', 'forestData', 'habiticaData', 'braverData', 'mindfulData', 'journalData'] as const;
     for (const group of nested) {
       if (body[group] && typeof body[group] === 'object') {
         for (const [field, val] of Object.entries(body[group])) {

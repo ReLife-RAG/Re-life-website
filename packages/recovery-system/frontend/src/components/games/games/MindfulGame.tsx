@@ -29,12 +29,11 @@ const TOTAL_ROUNDS = 5;
 const getToday = () => new Date().toISOString().slice(0, 10);
 
 export default function MindfulGame({ progress, onUpdateProgress, showToast }: Props) {
-  // Pull saved data from backend
-  const saved = (progress as any).mindfulData ?? {};
-  const [roundsDone,   setRoundsDone]   = useState(saved.roundsCompleted ?? 0);
-  const [exDone,       setExDone]       = useState<string[]>(saved.exercisesDoneToday ?? []);
-  const [totalSessions, setTotalSessions] = useState(saved.totalSessions ?? 0);
-  const [totalPts,     setTotalPts]     = useState(progress.totalPoints ?? 0);
+  // Pull saved data from progress
+  const saved = progress.mindfulData ?? ({} as any);
+  const [roundsDone,    setRoundsDone]    = useState<number>(saved.roundsCompleted ?? 0);
+  const [exDone,        setExDone]        = useState<string[]>(saved.exercisesDoneToday ?? []);
+  const [totalSessions, setTotalSessions] = useState<number>(saved.totalSessions ?? 0);
 
   // Breathing state
   const [phase,   setPhase]   = useState<Phase>('idle');
@@ -60,23 +59,25 @@ export default function MindfulGame({ progress, onUpdateProgress, showToast }: P
     iv.current = setInterval(() => {
       setTick(prev => {
         if (prev <= 1) {
-          // Advance phase
           const p = phaseRef.current;
           const r = roundRef.current;
           if (p === 'inhale') { setPhase('hold');   return BREATH_CYCLE.hold; }
           if (p === 'hold')   { setPhase('exhale');  return BREATH_CYCLE.exhale; }
           if (p === 'exhale') {
             if (r >= TOTAL_ROUNDS) {
-              // Done!
               clearInterval(iv.current!); iv.current = null;
               setPhase('done');
-              const newRounds = roundsDone + TOTAL_ROUNDS;
-              const newSessions = totalSessions + 1;
-              const pts = totalPts + 30;
-              setRoundsDone(newRounds); setTotalSessions(newSessions); setTotalPts(pts);
+              const nr = roundsDone + TOTAL_ROUNDS;
+              const ns = totalSessions + 1;
+              setRoundsDone(nr); setTotalSessions(ns);
               onUpdateProgress({
-                ...(({} as any).mindfulData !== undefined ? {} : {}),
-                totalPoints:   pts,
+                mindfulData: {
+                  roundsCompleted:    nr,
+                  totalSessions:      ns,
+                  lastSessionDate:    getToday(),
+                  exercisesDoneToday: exDone,
+                },
+                totalPoints:   (progress.totalPoints ?? 0) + 30,
                 currentStreak: (progress.currentStreak ?? 0) + 1,
                 lastPlayed:    new Date().toISOString(),
               } as any).catch(() => {});
@@ -85,7 +86,7 @@ export default function MindfulGame({ progress, onUpdateProgress, showToast }: P
             }
             setRound(r => r + 1); setPhase('rest'); return BREATH_CYCLE.rest;
           }
-          if (p === 'rest')   { setPhase('inhale');  return BREATH_CYCLE.inhale; }
+          if (p === 'rest') { setPhase('inhale'); return BREATH_CYCLE.inhale; }
           return prev;
         }
         return prev - 1;
@@ -103,10 +104,15 @@ export default function MindfulGame({ progress, onUpdateProgress, showToast }: P
     setExBusy(ex.id);
     try {
       const updated = [...exToday, ex.id];
-      const pts = totalPts + ex.pts;
-      setExDone(updated); setTotalPts(pts);
+      setExDone(updated);
       await onUpdateProgress({
-        totalPoints: pts,
+        mindfulData: {
+          roundsCompleted:    roundsDone,
+          totalSessions,
+          lastSessionDate:    getToday(),
+          exercisesDoneToday: updated,
+        },
+        totalPoints: (progress.totalPoints ?? 0) + ex.pts,
         lastPlayed:  new Date().toISOString(),
       } as any);
       showToast(`${ex.name} done! +${ex.pts} pts ✨`, 'success');
@@ -146,9 +152,9 @@ export default function MindfulGame({ progress, onUpdateProgress, showToast }: P
       {/* ══ STATS ROW ══ */}
       <div style={{ background: 'linear-gradient(135deg,#f0fdfa,#ccfbf1)', border: '1px solid #99f6e4', borderTop: 'none', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', textAlign: 'center', padding: '14px 0' }}>
         {[
-          { icon: '🌬️', val: roundsDone, label: 'Rounds Done'    },
-          { icon: '🏅', val: totalSessions, label: 'Sessions'      },
-          { icon: '⭐', val: `${totalPts} pts`, label: 'Total Points' },
+          { icon: '🌬️', val: roundsDone,              label: 'Rounds Done'  },
+          { icon: '🏅', val: totalSessions,             label: 'Sessions'     },
+          { icon: '⭐', val: `${progress.totalPoints ?? 0} pts`, label: 'Total Points' },
         ].map((s, i) => (
           <div key={s.label} style={{ padding: '8px 12px', borderLeft: i > 0 ? '1px solid #99f6e4' : 'none' }}>
             <div style={{ fontSize: 22, marginBottom: 2 }}>{s.icon}</div>
