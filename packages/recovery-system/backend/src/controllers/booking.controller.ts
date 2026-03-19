@@ -13,19 +13,15 @@ export const createBooking = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const { counselorId, slotStart, slotEnd, fee, notes } = req.body;
+    const { counselorId, slotStart, slotEnd, notes } = req.body;
+    let { fee } = req.body;
 
     // Validate required fields
-    if (!counselorId || !slotStart || !slotEnd || fee === undefined) {
+    if (!counselorId || !slotStart || !slotEnd) {
       return res.status(400).json({
         error: 'Missing required fields',
-        required: ['counselorId', 'slotStart', 'slotEnd', 'fee'],
+        required: ['counselorId', 'slotStart', 'slotEnd'],
       });
-    }
-
-    // Validate fee
-    if (typeof fee !== 'number' || fee < 0) {
-      return res.status(400).json({ error: 'Fee must be a non-negative number' });
     }
 
     // Parse dates
@@ -38,6 +34,22 @@ export const createBooking = async (req: Request, res: Response) => {
 
     if (start >= end) {
       return res.status(400).json({ error: 'Slot start time must be before end time' });
+    }
+
+    // Auto-calculate fee from counselor's hourly rate if not provided
+    if (fee === undefined) {
+      const counselor = await CounselorService.getCounselorById(counselorId);
+      if (!counselor) {
+        return res.status(404).json({ error: 'Counselor not found' });
+      }
+      // Calculate fee based on hours (hourly rate * hours)
+      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      fee = counselor.hourlyRate * hours;
+    }
+
+    // Validate fee if provided
+    if (typeof fee !== 'number' || fee < 0) {
+      return res.status(400).json({ error: 'Fee must be a non-negative number' });
     }
 
     // Create booking
@@ -125,6 +137,9 @@ export const getBookingById = async (req: Request, res: Response) => {
     if (error.status === 400) {
       return res.status(400).json({ error: error.message });
     }
+    if (error.status === 403) {
+      return res.status(403).json({ error: error.message });
+    }
     if (error.status === 404) {
       return res.status(404).json({ error: error.message });
     }
@@ -159,10 +174,17 @@ export const cancelBooking = async (req: Request, res: Response) => {
     if (error.status === 400) {
       return res.status(400).json({ error: error.message });
     }
+    if (error.status === 403) {
+      return res.status(403).json({ error: error.message });
+    }
     if (error.status === 404) {
       return res.status(404).json({ error: error.message });
     }
+    if (error.status === 409) {
+      return res.status(409).json({ error: error.message });
+    }
 
+    console.error('Unhandled error:', error);
     return res.status(500).json({ error: 'Failed to cancel booking' });
   }
 };

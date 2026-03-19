@@ -82,17 +82,18 @@ export class BookingService {
       throw { status: 400, message: 'Invalid booking ID format' };
     }
 
-    const query: any = { _id: bookingId };
-    if (userId) {
-      query.userId = userId;
-    }
-
-    const booking = await Booking.findOne(query)
+    // First, find the booking regardless of ownership
+    const booking = await Booking.findOne({ _id: bookingId })
       .populate('counselorId', 'bio rating totalSessions')
       .populate('userId', 'name email');
 
     if (!booking) {
       throw { status: 404, message: 'Booking not found' };
+    }
+
+    // Then check ownership if userId is provided
+    if (userId && booking.userId._id.toString() !== userId) {
+      throw { status: 403, message: 'You can only view your own bookings' };
     }
 
     return booking;
@@ -110,17 +111,23 @@ export class BookingService {
       throw { status: 400, message: 'Invalid booking ID format' };
     }
 
-    const booking = await Booking.findOne({ _id: bookingId, userId });
+    // First find the booking regardless of ownership (without populating)
+    const booking = await Booking.findOne({ _id: bookingId });
 
     if (!booking) {
       throw { status: 404, message: 'Booking not found' };
+    }
+
+    // Check ownership
+    if (booking.userId.toString() !== userId) {
+      throw { status: 403, message: 'You can only cancel your own bookings' };
     }
 
     if (booking.status === 'cancelled') {
       throw { status: 400, message: 'Booking is already cancelled' };
     }
 
-    // Free up the slot
+    // Free up the slot using the raw counselorId
     await CounselorService.markSlotAsAvailable(
       booking.counselorId.toString(),
       booking.slotStart,
@@ -132,7 +139,12 @@ export class BookingService {
     booking.cancellationReason = cancellationReason;
     await booking.save();
 
-    return booking;
+    // Return populated version for response
+    const populatedBooking = await Booking.findById(bookingId)
+      .populate('counselorId', 'bio rating totalSessions')
+      .populate('userId', 'name email');
+
+    return populatedBooking!;
   }
 
   /**
