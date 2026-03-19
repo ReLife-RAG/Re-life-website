@@ -532,4 +532,382 @@ const PostCard: React.FC<PostCardProps> = ({
     </div>
   );
 };
+// ─── MAIN COMPONENT ───
+const Community = () => {
+  const { user } = useAuth();
+  const [communityFilter, setCommunityFilter] = useState("All");
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPost, setEditingPost] = useState<ICommunityPost | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editError, setEditError] = useState("");
+
+  // Posts and loading state
+  const [communityPosts, setCommunityPosts] = useState<ICommunityPost[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+
+  // ─── Load Feed ───
+  const loadFeed = useCallback(async (skip: number = 0) => {
+    try {
+      setIsLoading(true);
+      setError("");
+      const response = await communityService.getFeed(communityFilter, 10, skip);
+      if (skip === 0) {
+        setCommunityPosts(response.posts);
+      } else {
+        setCommunityPosts((prev) => [...prev, ...response.posts]);
+      }
+      setHasMore(response.hasMore);
+      setPage(skip / 10);
+    } catch (err: any) {
+      setError(err.message || "Failed to load feed");
+      console.error("Load feed error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [communityFilter]);
+
+  // ─── Initial load and filter change ───
+  useEffect(() => {
+    loadFeed(0);
+  }, [loadFeed]);
+
+  // ─── Handle Create Post ───
+  const handleCreatePost = async (data: CreatePostData) => {
+    try {
+      setIsLoading(true);
+      const response = await communityService.createPost(
+        data.content,
+        data.category,
+        data.isAnonymous
+      );
+      setCommunityPosts([response.post, ...communityPosts]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ─── Handle Edit Post ───
+  const handleEditPost = async () => {
+    if (!editingPost) return;
+
+    setEditError("");
+
+    if (!editContent.trim()) {
+      setEditError("Content cannot be empty");
+      return;
+    }
+
+    if (editContent.trim().length < 10) {
+      setEditError("Content must be at least 10 characters");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await communityService.updatePost(
+        editingPost._id,
+        editContent.trim()
+      );
+
+      setCommunityPosts((prev) =>
+        prev.map((post) =>
+          post._id === response.post._id ? response.post : post
+        )
+      );
+
+      setShowEditModal(false);
+      setEditingPost(null);
+      setEditContent("");
+    } catch (err: any) {
+      setEditError(err.message || "Failed to update post");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ─── Handle Delete Post ───
+  const handleDeletePost = async (postId: string) => {
+    try {
+      setIsLoading(true);
+      await communityService.deletePost(postId);
+      setCommunityPosts((prev) => prev.filter((post) => post._id !== postId));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ─── Handle Like ───
+  const handleLike = async (postId: string) => {
+    try {
+      const response = await communityService.toggleLike(postId);
+      setCommunityPosts((prev) =>
+        prev.map((post) =>
+          post._id === response.post._id ? response.post : post
+        )
+      );
+    } catch (err) {
+      console.error("Like error:", err);
+    }
+  };
+
+  // ─── Handle Save ───
+  const handleSave = async (postId: string) => {
+    try {
+      const response = await communityService.toggleSave(postId);
+      setCommunityPosts((prev) =>
+        prev.map((post) =>
+          post._id === response.post._id ? response.post : post
+        )
+      );
+    } catch (err) {
+      console.error("Save error:", err);
+    }
+  };
+
+  // ─── Handle Add Comment ───
+  const handleAddComment = async (postId: string, content: string) => {
+    try {
+      const response = await communityService.addComment(postId, content);
+      setCommunityPosts((prev) =>
+        prev.map((post) =>
+          post._id === response.post._id ? response.post : post
+        )
+      );
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  // ─── Handle Delete Comment ───
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    try {
+      const response = await communityService.deleteComment(postId, commentId);
+      setCommunityPosts((prev) =>
+        prev.map((post) =>
+          post._id === response.post._id ? response.post : post
+        )
+      );
+    } catch (err) {
+      console.error("Delete comment error:", err);
+    }
+  };
+
+  return (
+    <div className="w-full bg-white sm:rounded-[40px] p-6 lg:p-10 font-sans text-slate-800 relative">
+      {/* HEADER */}
+      <section>
+        <p className="text-slate-400 text-sm font-medium mb-1">
+          Portal {'>'} Community
+        </p>
+        <h1 className="text-3xl font-bold text-slate-900 mb-8">
+          Anonymous Community
+        </h1>
+      </section>
+
+      {/* ERROR MESSAGE */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex gap-3">
+          <AlertCircle size={20} className="text-red-500 flex-shrink-0" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      {/* MAIN CONTENT */}
+      <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+        {/* FEED HEADER */}
+        <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-slate-900">Anonymous Feed</h2>
+            <p className="text-slate-400 font-medium">
+              Connect with others navigating similar paths.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowPostModal(true)}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-[#86D293] text-white rounded-2xl text-sm font-bold shadow-lg shadow-[#86D293]/20 hover:scale-[1.02] transition-all disabled:opacity-50"
+            disabled={isLoading}
+          >
+            <Plus size={18} /> Share Your Story
+          </button>
+        </section>
+
+        {/* GRID LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* SIDEBAR - FILTERS */}
+          <div className="lg:col-span-3 space-y-6">
+            <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm sticky top-10">
+              <h3 className="font-bold text-slate-900 mb-6 uppercase text-xs tracking-widest">
+                Support Categories
+              </h3>
+              <div className="space-y-2">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      setCommunityFilter(cat);
+                      setPage(0);
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
+                      communityFilter === cat
+                        ? "bg-[#F3F7F3] text-[#4A7C7C]"
+                        : "text-slate-400 hover:bg-slate-50"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-8 pt-8 border-t border-slate-50">
+                <div className="bg-[#4A7C7C] rounded-2xl p-4 text-white">
+                  <p className="text-[10px] font-bold uppercase opacity-60 mb-2">
+                    Privacy Note
+                  </p>
+                  <p className="text-[11px] leading-relaxed">
+                    Your real identity is never shown. We use unique names to
+                    maintain complete anonymity.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* MAIN FEED */}
+          <div className="lg:col-span-9 space-y-6">
+            {isLoading && communityPosts.length === 0 ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader size={32} className="animate-spin text-[#86D293]" />
+              </div>
+            ) : communityPosts.length === 0 ? (
+              <div className="text-center py-16">
+                <MessageCircle
+                  size={48}
+                  className="mx-auto text-slate-300 mb-4"
+                />
+                <p className="text-slate-400 text-lg font-medium">
+                  No posts yet in this category
+                </p>
+                <p className="text-slate-400 text-sm">
+                  Be the first to share your story!
+                </p>
+              </div>
+            ) : (
+              <>
+                {communityPosts.map((post) => (
+                  <PostCard
+                    key={post._id}
+                    post={post}
+                    isAuthor={post.isAuthor || false}
+                    onLike={handleLike}
+                    onSave={handleSave}
+                    onEdit={(post) => {
+                      setEditingPost(post);
+                      setEditContent(post.content);
+                      setShowEditModal(true);
+                    }}
+                    onDelete={handleDeletePost}
+                    onAddComment={handleAddComment}
+                    onDeleteComment={handleDeleteComment}
+                    currentUserId={user?._id}
+                    isLoading={isLoading}
+                  />
+                ))}
+
+                {/* Load More Button */}
+                {hasMore && (
+                  <button
+                    onClick={() => loadFeed((page + 1) * 10)}
+                    disabled={isLoading}
+                    className="w-full py-3 text-slate-600 font-bold hover:text-[#4A7C7C] transition-colors disabled:opacity-50"
+                  >
+                    {isLoading ? "Loading..." : "Load More"}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* CREATE POST MODAL */}
+      <CreatePostModal
+        isOpen={showPostModal}
+        onClose={() => setShowPostModal(false)}
+        onSubmit={handleCreatePost}
+        isLoading={isLoading}
+      />
+
+      {/* EDIT POST MODAL */}
+      {showEditModal && editingPost && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-xl rounded-[40px] p-10 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-bold text-slate-900">Edit Post</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingPost(null);
+                  setEditError("");
+                }}
+                className="p-2 hover:bg-slate-50 rounded-xl transition-colors"
+              >
+                <XCircle size={24} className="text-slate-300" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex gap-3">
+                <AlertCircle size={18} className="text-red-500 flex-shrink-0" />
+                <p className="text-sm text-red-700">{editError}</p>
+              </div>
+            )}
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase mb-3 block">
+                  Edit Your Message
+                </label>
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full h-40 p-6 bg-slate-50 rounded-[32px] border-none outline-none ring-1 ring-slate-100 focus:ring-[#86D293] text-sm resize-none text-slate-700"
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-slate-400 mt-2">
+                  {editContent.length}/2000 characters
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingPost(null);
+                    setEditError("");
+                  }}
+                  className="flex-1 py-3 text-slate-600 bg-slate-50 rounded-[24px] font-bold hover:bg-slate-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditPost}
+                  disabled={isLoading}
+                  className="flex-1 py-3 bg-[#86D293] text-white rounded-[24px] font-bold shadow-lg shadow-[#86D293]/20 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Community;
+
 
