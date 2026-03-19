@@ -67,7 +67,8 @@ app.use('/api/chat', chatRoutes);
 // Games Routes
 app.use('/api/games', gamesRoutes);
 
-
+// apisnap.init(app);
+>>>>>>>>> Temporary merge branch 2
 
 // 404 Handler
 app.use((req: Request, res: Response) => {
