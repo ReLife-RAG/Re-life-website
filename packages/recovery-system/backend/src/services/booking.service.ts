@@ -3,6 +3,23 @@ import { CounselorService } from './counselor.service';
 import User from '../models/User';
 
 export class BookingService {
+  private static getBookingPopulate() {
+    return [
+      {
+        path: 'counselorId',
+        select: 'bio rating totalSessions hourlyRate profileImage specializations',
+        populate: {
+          path: 'userId',
+          select: 'name email image',
+        },
+      },
+      {
+        path: 'userId',
+        select: 'name email',
+      },
+    ];
+  }
+
   /**
    * Create a new booking
    */
@@ -12,6 +29,7 @@ export class BookingService {
     slotStart: Date;
     slotEnd: Date;
     fee: number;
+    contactEmail?: string;
     notes?: string;
   }): Promise<IBooking> {
     // Validate slot is available
@@ -50,12 +68,14 @@ export class BookingService {
       slotStart: data.slotStart,
       slotEnd: data.slotEnd,
       fee: data.fee,
+      contactEmail: data.contactEmail,
       notes: data.notes,
       status: 'confirmed',
     });
 
     await booking.save();
-    return booking;
+    const populated = await Booking.findById(booking._id).populate(this.getBookingPopulate());
+    return populated || booking;
   }
 
   /**
@@ -68,8 +88,7 @@ export class BookingService {
 
     const bookings = await Booking.find({ userId })
       .sort({ createdAt: -1 })
-      .populate('counselorId', 'bio rating totalSessions')
-      .populate('userId', 'name email');
+      .populate(this.getBookingPopulate());
 
     return bookings;
   }
@@ -84,8 +103,7 @@ export class BookingService {
 
     // First, find the booking regardless of ownership
     const booking = await Booking.findOne({ _id: bookingId })
-      .populate('counselorId', 'bio rating totalSessions')
-      .populate('userId', 'name email');
+      .populate(this.getBookingPopulate());
 
     if (!booking) {
       throw { status: 404, message: 'Booking not found' };
@@ -141,8 +159,75 @@ export class BookingService {
 
     // Return populated version for response
     const populatedBooking = await Booking.findById(bookingId)
-      .populate('counselorId', 'bio rating totalSessions')
-      .populate('userId', 'name email');
+      .populate(this.getBookingPopulate());
+
+    return populatedBooking!;
+  }
+
+  /**
+   * Reschedule a booking to another free slot
+   */
+  static async rescheduleBooking(
+    bookingId: string,
+    userId: string,
+    slotStart: Date,
+    slotEnd: Date
+  ): Promise<IBooking> {
+    if (!bookingId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw { status: 400, message: 'Invalid booking ID format' };
+    }
+
+    const booking = await Booking.findOne({ _id: bookingId });
+    if (!booking) {
+      throw { status: 404, message: 'Booking not found' };
+    }
+
+    if (booking.userId.toString() !== userId) {
+      throw { status: 403, message: 'You can only reschedule your own bookings' };
+    }
+
+    if (booking.status !== 'confirmed') {
+      throw { status: 400, message: 'Only confirmed bookings can be rescheduled' };
+    }
+
+    if (new Date() > slotStart) {
+      throw { status: 400, message: 'Cannot reschedule to a past slot' };
+    }
+
+    const isDifferentSlot =
+      booking.slotStart.getTime() !== slotStart.getTime() ||
+      booking.slotEnd.getTime() !== slotEnd.getTime();
+    if (!isDifferentSlot) {
+      throw { status: 400, message: 'New slot must be different from the current slot' };
+    }
+
+    const isAvailable = await CounselorService.isSlotAvailable(
+      booking.counselorId.toString(),
+      slotStart,
+      slotEnd
+    );
+    if (!isAvailable) {
+      throw { status: 409, message: 'Selected slot is not available' };
+    }
+
+    await CounselorService.markSlotAsBooked(
+      booking.counselorId.toString(),
+      slotStart,
+      slotEnd
+    );
+
+    await CounselorService.markSlotAsAvailable(
+      booking.counselorId.toString(),
+      booking.slotStart,
+      booking.slotEnd
+    );
+
+    booking.slotStart = slotStart;
+    booking.slotEnd = slotEnd;
+    await booking.save();
+
+    const populatedBooking = await Booking.findById(bookingId)
+      .populate(this.getBookingPopulate());
 
     return populatedBooking!;
   }
