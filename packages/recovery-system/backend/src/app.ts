@@ -12,6 +12,7 @@ import { isAuth } from "./middleware/isAuth";
 import { getProfile, updateProfile, getProfileDetails, signUp } from "./controllers/auth.controller";
 import chatRoutes from "./routes/chat.routes";
 import gamesRoutes from "./routes/games.routes";
+import resourceRoutes from "./routes/resource.routes";
 //import analyzer from 'express-api-timer';
 // import apisnap from '@umeshindu222/apisnap';
 
@@ -71,6 +72,9 @@ app.use('/api/chat', chatRoutes);
 
 // Games Routes
 app.use('/api/games', gamesRoutes);
+
+// Resource save Routes
+app.use('/api/resources', resourceRoutes);
 
 // apisnap.init(app);
 
