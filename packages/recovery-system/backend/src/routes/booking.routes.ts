@@ -5,6 +5,7 @@ import {
   getUserBookings,
   getBookingById,
   cancelBooking,
+  rescheduleBooking,
   getCounselorAvailableSlots,
   addAvailableSlots,
 } from '../controllers/booking.controller';
@@ -19,6 +20,7 @@ router.post('/bookings', isAuth, createBooking);
 router.get('/bookings', isAuth, getUserBookings);
 router.get('/bookings/:id', isAuth, getBookingById);
 router.delete('/bookings/:id', isAuth, cancelBooking);
+router.patch('/bookings/:id/reschedule', isAuth, rescheduleBooking);
 
 // Counselor-only routes
 router.post('/counselors/:counselorId/available-slots', isAuth, addAvailableSlots);
