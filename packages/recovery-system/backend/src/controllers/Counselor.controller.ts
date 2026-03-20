@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Counselor from '../models/Counselor';
-import User from '../models/User';
+// import User from '../models/User';
 import { ValidationCredentials, ValidateSpecialization, validationBio } from '../utils/counselorValidation';
 
 // POST /api/counselors
