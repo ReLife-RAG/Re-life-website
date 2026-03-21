@@ -1,16 +1,28 @@
 import { Router } from 'express';
-import { createEntry, getEntries, getEntryById, updateEntry, deleteEntry } from '../controllers/journal.controller';
+import {
+  createEntry,
+  getEntries,
+  getEntryById,
+  updateEntry,
+  deleteEntry,
+  getStats,
+} from '../controllers/journal.controller';
 import upload from '../services/upload.service';
-import { isAuth } from '../middleware/isAuth'; // Temporarily disabled for testing
-
+import { isAuth } from '../middleware/isAuth';
 
 const router = Router();
 
-// todo - Add isAuth middleware once authentication is implemented
-router.post('/journals',isAuth, upload.single('image'), createEntry);
-router.get('/journals', isAuth, getEntries);
-router.get('/journals/:id', isAuth, getEntryById);
-router.patch('/journals/:id', isAuth, upload.single('image'), updateEntry); // Image upload for updates
-router.delete('/journals/:id', isAuth, deleteEntry);
+// All journal routes require authentication
+router.use(isAuth);
+
+// ── /stats must come BEFORE /:id so it isn't captured as an ID param ─────────
+router.get('/journals/stats', getStats);
+
+router.get('/journals',       getEntries);
+router.post('/journals',      upload.single('image'), createEntry);
+
+router.get('/journals/:id',   getEntryById);
+router.patch('/journals/:id', upload.single('image'), updateEntry);
+router.delete('/journals/:id', deleteEntry);
 
 export default router;
